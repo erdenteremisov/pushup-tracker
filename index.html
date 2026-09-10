@@ -1,0 +1,558 @@
+   <!DOCTYPE html>
+  <html lang="ru">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+      <title>
+        100 отжиманий
+      </title>
+      <!-- Telegram Mini App SDK -->
+        <script src="https://telegram.org/js/telegram-web-app.js">
+        </script>
+        <!-- Supabase client (общая база данных для всех участников) -->
+          <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js">
+          </script>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+          <style>
+            :root {
+    --bg: #1c1b1a;
+    --panel: #242220;
+    --panel-2: #2c2926;
+    --accent: #e8482c;
+    --accent-2: #ff8452;
+    --success: #8fbf6f;
+    --text: #f2efe9;
+    --text-dim: #93897e;
+    --border: #3a362f;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 20px 16px 48px;
+    padding-top: max(20px, env(safe-area-inset-top));
+  }
+
+  .app { width: 100%; max-width: 560px; }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 12px;
+  }
+
+  h1 {
+    font-family: 'Big Shoulders Display', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .who {
+    font-size: 13px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .who span.name { color: var(--text); font-weight: 600; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 16px;
+  }
+
+  .hero { text-align: center; }
+
+  .hero .count {
+    font-family: 'Big Shoulders Display', sans-serif;
+    font-weight: 900;
+    font-size: 92px;
+    line-height: 0.9;
+    letter-spacing: -1px;
+  }
+
+  .hero .count .goal { font-size: 38px; color: var(--text-dim); font-weight: 600; }
+  .hero .label { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+
+  .tally {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 5px;
+    margin: 20px 0 6px;
+  }
+
+  .tally .seg {
+    height: 14px;
+    border-radius: 3px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .tally .seg.full { background: var(--accent); border-color: var(--accent); }
+  .tally .seg.over { background: var(--success); border-color: var(--success); }
+
+  .tally-caption { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+
+  .add-row { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+
+  button {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+
+  button:hover { border-color: var(--accent); }
+  button:active { transform: scale(0.96); }
+
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1c1b1a;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  button.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+
+  .custom-row { display: flex; gap: 8px; margin-top: 10px; }
+
+  .custom-row input {
+    flex: 1;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    padding: 11px 12px;
+    min-width: 0;
+  }
+
+  .custom-row input:focus { outline: none; border-color: var(--accent); }
+
+  .strip { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+  .streak-num { font-family: 'Big Shoulders Display', sans-serif; font-weight: 800; font-size: 34px; color: var(--success); }
+  .streak-text { font-size: 13px; color: var(--text-dim); }
+
+  .calendar { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; margin-top: 14px; }
+
+  .calendar .day { aspect-ratio: 1; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--border); }
+  .calendar .day.some { background: #6b3a2c; border-color: #6b3a2c; }
+  .calendar .day.done { background: var(--accent); border-color: var(--accent); }
+
+  h2 { font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 18px; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: var(--text-dim); margin: 0 0 6px; }
+
+  table.board { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  table.board th {
+    text-align: left; font-size: 12px; color: var(--text-dim);
+    font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border);
+  }
+  table.board td { padding: 10px 8px; font-size: 15px; border-bottom: 1px solid var(--border); }
+  table.board tr:last-child td { border-bottom: none; }
+  table.board td.rank { color: var(--text-dim); width: 24px; }
+  table.board tr.me td { color: var(--accent-2); font-weight: 600; }
+  table.board td.today-count {
+    text-align: right; font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 19px;
+  }
+  table.board td.streak-cell { text-align: right; color: var(--success); font-size: 13px; width: 60px; }
+
+  .empty { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
+  .error-banner {
+    background: #3a2420; border: 1px solid var(--accent); color: var(--accent-2);
+    border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-bottom: 16px;
+  }
+
+  .status-line { text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="app" id="app">
+            <div class="status-line">
+              Загрузка…
+            </div>
+          </div>
+          <script>
+            
+const SUPABASE_URL = "https://ouylmropumyfpcacxgla.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91eWxtcm9wdW15ZnBjYWN4Z2xhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMjcyMjgsImV4cCI6MjEwNDYwMzIyOH0.V4ZebikFJ19DAt7LlwPiN7w-jgOilXunwDKQ3snJ2iY";
+const TABLE_NAME = "pushup_users";
+
+const GOAL = 100;
+const SET_SIZE = 10;
+
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+
+const supabaseClient = (SUPABASE_URL.startsWith("http"))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function dateStr(offsetDays) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+function getTelegramIdentity() {
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    const u = tg.initDataUnsafe.user;
+    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || ('user' + u.id);
+    return { id: String(u.id), name };
+  }
+  // Фолбэк для тестирования вне Telegram (в обычном браузере)
+  let id = localStorage.getItem('fallback_id');
+  let name = localStorage.getItem('fallback_name');
+  if (!id) {
+    id = 'local-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('fallback_id', id);
+  }
+  if (!name) {
+    name = prompt('Тестовый режим (не в Telegram). Введи имя:') || 'Гость';
+    localStorage.setItem('fallback_name', name);
+  }
+  return { id, name };
+}
+
+function computeStreak(history) {
+  let streak = 0;
+  let dayOffset = (history[todayStr()] || 0) >= GOAL ? 0 : -1;
+  while (true) {
+    const d = dateStr(dayOffset);
+    if ((history[d] || 0) >= GOAL) { streak++; dayOffset--; }
+    else break;
+  }
+  return streak;
+}
+
+let state = { identity: null, data: null, leaderboard: [], configError: false };
+
+async function loadUser(id) {
+  const { data, error } = await supabaseClient
+    .from(TABLE_NAME)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return { history: {}, streak: 0 };
+  return { history: data.history || {}, streak: data.streak || 0 };
+}
+
+async function saveUser(id, name, data) {
+  const { error } = await supabaseClient
+    .from(TABLE_NAME)
+    .upsert({ id, name, history: data.history, streak: data.streak, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+async function fetchLeaderboard() {
+  const { data, error } = await supabaseClient.from(TABLE_NAME).select('*');
+  if (error) throw error;
+  const today = todayStr();
+  const entries = (data || []).map(row => ({
+    name: row.name,
+    todayCount: (row.history || {})[today] || 0,
+    streak: row.streak || 0,
+  }));
+  entries.sort((a, b) => b.todayCount - a.todayCount || b.streak - a.streak);
+  return entries;
+}
+
+async function init() {
+  const app = document.getElementById('app');
+
+  if (!supabaseClient) {
+    state.configError = true;
+    render();
+    return;
+  }
+
+  state.identity = getTelegramIdentity();
+  try {
+    state.data = await loadUser(state.identity.id);
+  } catch (e) {
+    console.error(e);
+    state.data = { history: {}, streak: 0 };
+    state.loadError = true;
+  }
+  render();
+  refreshLeaderboard();
+}
+
+async function addReps(n) {
+  const today = todayStr();
+  const current = state.data.history[today] || 0;
+  state.data.history[today] = current + n;
+  state.data.streak = computeStreak(state.data.history);
+  render();
+  try {
+    await saveUser(state.identity.id, state.identity.name, state.data);
+  } catch (e) {
+    console.error('Save failed', e);
+  }
+  refreshLeaderboard();
+}
+
+async function refreshLeaderboard() {
+  try {
+    state.leaderboard = await fetchLeaderboard();
+  } catch (e) {
+    console.error(e);
+    state.leaderboard = null;
+  }
+  renderLeaderboard();
+}
+
+function render() {
+  const app = document.getElementById('app');
+
+  if (state.configError) {
+    app.innerHTML = `
+            <div class="error-banner">
+              Трекер не настроен: впиши SUPABASE_URL и SUPABASE_ANON_KEY в начале файла, иначе данные никуда не сохранятся.
+            </div>
+            `;
+    return;
+  }
+
+  const today = todayStr();
+  const todayCount = state.data.history[today] || 0;
+  const fullSegs = Math.min(Math.floor(todayCount / SET_SIZE), 10);
+  const overGoal = todayCount > GOAL;
+
+  let tallyHtml = '';
+  for (let i = 0; i
+            < 10; i++) {
+    let cls = 'seg';
+    if (i < fullSegs) cls += overGoal ? ' over' : ' full';
+    tallyHtml += `<div class="${cls}">
+            </div>
+            `;
+  }
+
+  let calHtml = '';
+  for (let i = 29; i >= 0; i--) {
+    const d = dateStr(-i);
+    const c = state.data.history[d] || 0;
+    let cls = 'day';
+    if (c >= GOAL) cls += ' done';
+    else if (c > 0) cls += ' some';
+    calHtml += `
+            <div class="${cls}" title="${d}: ${c}">
+            </div>
+            `;
+  }
+
+  app.innerHTML = `
+            <header>
+              <h1>
+                100 отжиманий
+              </h1>
+              <div class="who">
+                Это
+                <span class="name">
+                  ${escapeHtml(state.identity.name)}
+                </span>
+              </div>
+            </header>
+            ${state.loadError ? `
+<div class="error-banner">
+  Не удалось загрузить твои данные, но можно продолжать — новые повторения сохранятся.
+</div>
+` : ''}
+            <div class="panel hero">
+              <div class="count">
+                ${todayCount}
+                <span class="goal">
+                  / ${GOAL}
+                </span>
+              </div>
+              <div class="label">
+                ${todayCount >= GOAL ? 'Цель на сегодня выполнена' : `осталось ${GOAL - todayCount}`}
+              </div>
+              <div class="tally">
+                ${tallyHtml}
+              </div>
+              <div class="tally-caption">
+                <span>
+                  0
+                </span>
+                <span>
+                  по 10 отжиманий
+                </span>
+                <span>
+                  100
+                </span>
+              </div>
+              <div class="add-row">
+                <button data-add="10">
+                  +10
+                </button>
+                <button data-add="20">
+                  +20
+                </button>
+                <button data-add="25">
+                  +25
+                </button>
+                <button class="primary" data-add="100">
+                  Сразу 100
+                </button>
+              </div>
+              <div class="custom-row">
+                <input id="custom-input" type="number" min="1" placeholder="своё число" />
+                <button id="custom-add">
+                  Добавить
+                </button>
+              </div>
+            </div>
+            <div class="panel strip">
+              <div>
+                <div class="streak-num">
+                  ${state.data.streak}
+                </div>
+                <div class="streak-text">
+                  ${state.data.streak === 1 ? 'день подряд' : 'дней подряд'}
+                </div>
+              </div>
+              <div style="flex:1">
+                <div class="calendar">
+                  ${calHtml}
+                </div>
+              </div>
+            </div>
+            <div class="panel" id="leaderboard-panel">
+              <h2>
+                Рейтинг сегодня
+              </h2>
+              <p class="sub">
+                Общий для всех, кто пользуется трекером
+              </p>
+              <div id="leaderboard-body">
+                <div class="empty">
+                  Загрузка рейтинга…
+                </div>
+              </div>
+            </div>
+            `;
+
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.onclick = () => addReps(parseInt(btn.dataset.add, 10));
+  });
+  document.getElementById('custom-add').onclick = () => {
+    const input = document.getElementById('custom-input');
+    const val = parseInt(input.value, 10);
+    if (val > 0) { addReps(val); input.value = ''; }
+  };
+  document.getElementById('custom-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('custom-add').click();
+  });
+
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const el = document.getElementById('leaderboard-body');
+  if (!el) return;
+  if (state.leaderboard === null) {
+   if (state.leaderboard === null) {
+  el.innerHTML = `
+    <div class="empty">
+      Не удалось загрузить рейтинг.
+    </div>
+  `;
+  return;
+}
+
+if (!state.leaderboard.length) {
+  el.innerHTML = `
+    <div class="empty">
+      Пока никто не отметился сегодня.
+    </div>
+  `;
+  return;
+}
+  }
+  let rows = '';
+  state.leaderboard.forEach((entry, i) => {
+    const mine = entry.name === state.identity.name;
+    rows += `
+            <tr class="${mine ? 'me' : ''}">
+              <td class="rank">
+                ${i + 1}
+              </td>
+              <td>
+                ${escapeHtml(entry.name)}
+              </td>
+              <td class="today-count">
+                ${entry.todayCount}
+              </td>
+              <td class="streak-cell">
+                ${entry.streak > 0 ? entry.streak + ' дн' : '—'}
+              </td>
+            </tr>
+            `;
+  });
+  el.innerHTML = `
+            <table class="board">
+              <thead>
+                <tr>
+                  <th>
+                  </th>
+                  <th>
+                    Имя
+                  </th>
+                  <th style="text-align:right">
+                    Сегодня
+                  </th>
+                  <th style="text-align:right">
+                    Стрик
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+            `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+          </script>
+        </body>
+      </html>

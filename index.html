@@ -1,22 +1,21 @@
-   <!DOCTYPE html>
-  <html lang="ru">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-      <title>
-        100 отжиманий
-      </title>
-      <!-- Telegram Mini App SDK -->
-        <script src="https://telegram.org/js/telegram-web-app.js">
-        </script>
-        <!-- Supabase client (общая база данных для всех участников) -->
-          <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js">
-          </script>
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-          <style>
-            :root {
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Моя норма отжиманий</title>
+
+<!-- Telegram Mini App SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- Supabase client (общая база данных для всех участников) -->
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
     --bg: #1c1b1a;
     --panel: #242220;
     --panel-2: #2c2926;
@@ -65,12 +64,7 @@
     line-height: 1;
   }
 
-  .who {
-    font-size: 13px;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-
+  .who { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
   .who span.name { color: var(--text); font-weight: 600; }
 
   .panel {
@@ -92,7 +86,9 @@
   }
 
   .hero .count .goal { font-size: 38px; color: var(--text-dim); font-weight: 600; }
-  .hero .label { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+  .hero .label { color: var(--text-dim); font-size: 14px; margin-top: 6px; }
+  .hero .label.done { color: var(--success); font-weight: 600; }
+  .hero .overflow { color: var(--accent-2); font-size: 13px; margin-top: 2px; }
 
   .tally {
     display: grid;
@@ -137,14 +133,25 @@
     border-color: var(--accent);
     color: #1c1b1a;
     flex: 1;
-    min-width: 120px;
+    min-width: 140px;
   }
 
   button.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
 
+  button.link-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    text-decoration: underline;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+
+  button.link-btn:hover { color: var(--accent-2); border: none; }
+
   .custom-row { display: flex; gap: 8px; margin-top: 10px; }
 
-  .custom-row input {
+  .custom-row input, .edit-row input {
     flex: 1;
     background: var(--panel-2);
     border: 1px solid var(--border);
@@ -156,7 +163,11 @@
     min-width: 0;
   }
 
-  .custom-row input:focus { outline: none; border-color: var(--accent); }
+  .custom-row input:focus, .edit-row input:focus { outline: none; border-color: var(--accent); }
+
+  .edit-row { display: flex; gap: 8px; margin-top: 12px; }
+  .edit-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .field-error { color: var(--accent-2); font-size: 12px; margin-top: 6px; }
 
   .strip { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 
@@ -164,9 +175,8 @@
   .streak-text { font-size: 13px; color: var(--text-dim); }
 
   .calendar { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; margin-top: 14px; }
-
   .calendar .day { aspect-ratio: 1; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--border); }
-  .calendar .day.some { background: #6b3a2c; border-color: #6b3a2c; }
+  .calendar .day.some { background: #a3672f; border-color: #a3672f; }
   .calendar .day.done { background: var(--accent); border-color: var(--accent); }
 
   h2 { font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 18px; margin: 0 0 4px; }
@@ -177,14 +187,16 @@
     text-align: left; font-size: 12px; color: var(--text-dim);
     font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border);
   }
-  table.board td { padding: 10px 8px; font-size: 15px; border-bottom: 1px solid var(--border); }
+  table.board td { padding: 10px 8px; font-size: 15px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   table.board tr:last-child td { border-bottom: none; }
   table.board td.rank { color: var(--text-dim); width: 24px; }
   table.board tr.me td { color: var(--accent-2); font-weight: 600; }
   table.board td.today-count {
     text-align: right; font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 19px;
   }
-  table.board td.streak-cell { text-align: right; color: var(--success); font-size: 13px; width: 60px; }
+  table.board td.today-count .pct { font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 11px; color: var(--text-dim); }
+  table.board tr.me td.today-count .pct { color: var(--accent-2); }
+  table.board td.streak-cell { text-align: right; color: var(--success); font-size: 13px; width: 70px; white-space: nowrap; }
 
   .empty { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
   .error-banner {
@@ -193,27 +205,63 @@
   }
 
   .status-line { text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="app" id="app">
-            <div class="status-line">
-              Загрузка…
-            </div>
-          </div>
-          <script>
-            
+
+  /* Onboarding / goal picker */
+  .onboarding h2 { font-size: 22px; text-align: center; margin-bottom: 6px; }
+  .onboarding .sub { text-align: center; margin-bottom: 20px; }
+
+  .preset-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+  .preset-row button { min-width: 56px; text-align: center; }
+  .preset-row button.selected { background: var(--accent); border-color: var(--accent); color: #1c1b1a; }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 20px;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 360px;
+    width: 100%;
+  }
+
+  .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .settings-row .goal-value { font-family: 'Big Shoulders Display', sans-serif; font-weight: 800; font-size: 26px; }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="status-line">Загрузка…</div>
+</div>
+
+<script>
+/* ====================================================================
+   НАСТРОЙКА: данные проекта Supabase.
+   ==================================================================== */
 const SUPABASE_URL = "https://ouylmropumyfpcacxgla.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91eWxtcm9wdW15ZnBjYWN4Z2xhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMjcyMjgsImV4cCI6MjEwNDYwMzIyOH0.V4ZebikFJ19DAt7LlwPiN7w-jgOilXunwDKQ3snJ2iY";
 const TABLE_NAME = "pushup_users";
+/* ==================================================================== */
 
-const GOAL = 100;
-const SET_SIZE = 10;
+const DEFAULT_GOAL = 100;
+const GOAL_PRESETS = [10, 20, 30, 50, 100];
+const SEGMENTS = 10;
 
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); }
 
-const supabaseClient = (SUPABASE_URL.startsWith("http"))
+const supabaseConfigured = SUPABASE_URL.startsWith("http") &&
+  (SUPABASE_ANON_KEY.startsWith("ey") || SUPABASE_ANON_KEY.startsWith("sb_"));
+const supabaseClient = supabaseConfigured
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
@@ -223,6 +271,10 @@ function dateStr(offsetDays) {
   d.setDate(d.getDate() + offsetDays);
   return d.toISOString().slice(0, 10);
 }
+function formatDateHuman(dstr) {
+  const d = new Date(dstr + 'T00:00:00');
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
 
 function getTelegramIdentity() {
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -230,7 +282,6 @@ function getTelegramIdentity() {
     const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || ('user' + u.id);
     return { id: String(u.id), name };
   }
-  // Фолбэк для тестирования вне Telegram (в обычном браузере)
   let id = localStorage.getItem('fallback_id');
   let name = localStorage.getItem('fallback_name');
   if (!id) {
@@ -244,18 +295,31 @@ function getTelegramIdentity() {
   return { id, name };
 }
 
-function computeStreak(history) {
+function dayMet(history, goal, date) {
+  return (history[date] || 0) >= goal;
+}
+
+function computeStreak(history, goal) {
   let streak = 0;
-  let dayOffset = (history[todayStr()] || 0) >= GOAL ? 0 : -1;
-  while (true) {
-    const d = dateStr(dayOffset);
-    if ((history[d] || 0) >= GOAL) { streak++; dayOffset--; }
-    else break;
+  let dayOffset = dayMet(history, goal, todayStr()) ? 0 : -1;
+  while (dayMet(history, goal, dateStr(dayOffset))) {
+    streak++;
+    dayOffset--;
   }
   return streak;
 }
 
-let state = { identity: null, data: null, leaderboard: [], configError: false };
+let state = {
+  identity: null,
+  data: null,           // { goal, history, streak }
+  leaderboard: [],
+  configError: false,
+  loadError: false,
+  view: 'loading',       // 'loading' | 'onboarding' | 'main' | 'edit-result' | 'settings-goal'
+  pendingGoalSelection: null,
+};
+
+/* ---------------- Data layer ---------------- */
 
 async function loadUser(id) {
   const { data, error } = await supabaseClient
@@ -264,14 +328,25 @@ async function loadUser(id) {
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  if (!data) return { history: {}, streak: 0 };
-  return { history: data.history || {}, streak: data.streak || 0 };
+  if (!data) return { goal: null, history: {}, streak: 0 };
+  return {
+    goal: (data.goal === null || data.goal === undefined) ? null : data.goal,
+    history: data.history || {},
+    streak: data.streak || 0,
+  };
 }
 
 async function saveUser(id, name, data) {
   const { error } = await supabaseClient
     .from(TABLE_NAME)
-    .upsert({ id, name, history: data.history, streak: data.streak, updated_at: new Date().toISOString() });
+    .upsert({
+      id,
+      name,
+      goal: data.goal,
+      history: data.history,
+      streak: data.streak,
+      updated_at: new Date().toISOString(),
+    });
   if (error) throw error;
 }
 
@@ -279,18 +354,25 @@ async function fetchLeaderboard() {
   const { data, error } = await supabaseClient.from(TABLE_NAME).select('*');
   if (error) throw error;
   const today = todayStr();
-  const entries = (data || []).map(row => ({
-    name: row.name,
-    todayCount: (row.history || {})[today] || 0,
-    streak: row.streak || 0,
-  }));
+  const entries = (data || []).map(row => {
+    const goal = (row.goal === null || row.goal === undefined) ? DEFAULT_GOAL : row.goal;
+    const todayCount = (row.history || {})[today] || 0;
+    return {
+      id: String(row.id),
+      name: row.name,
+      todayCount,
+      goal,
+      pct: goal > 0 ? Math.round((todayCount / goal) * 100) : 0,
+      streak: row.streak || 0,
+    };
+  });
   entries.sort((a, b) => b.todayCount - a.todayCount || b.streak - a.streak);
   return entries;
 }
 
-async function init() {
-  const app = document.getElementById('app');
+/* ---------------- Init ---------------- */
 
+async function init() {
   if (!supabaseClient) {
     state.configError = true;
     render();
@@ -302,25 +384,61 @@ async function init() {
     state.data = await loadUser(state.identity.id);
   } catch (e) {
     console.error(e);
-    state.data = { history: {}, streak: 0 };
+    state.data = { goal: null, history: {}, streak: 0 };
     state.loadError = true;
   }
+
+  if (state.data.goal === null || state.data.goal === undefined) {
+    const isBrandNew = Object.keys(state.data.history).length === 0;
+    state.data.goal = DEFAULT_GOAL;
+    state.view = isBrandNew ? 'onboarding' : 'main';
+  } else {
+    state.view = 'main';
+  }
+
   render();
-  refreshLeaderboard();
+  if (state.view === 'main') refreshLeaderboard();
 }
 
-async function addReps(n) {
-  const today = todayStr();
-  const current = state.data.history[today] || 0;
-  state.data.history[today] = current + n;
-  state.data.streak = computeStreak(state.data.history);
-  render();
+/* ---------------- Actions ---------------- */
+
+async function persist() {
   try {
     await saveUser(state.identity.id, state.identity.name, state.data);
   } catch (e) {
     console.error('Save failed', e);
   }
+}
+
+async function addReps(n) {
+  if (!Number.isInteger(n) || n <= 0) return;
+  const today = todayStr();
+  const current = state.data.history[today] || 0;
+  state.data.history[today] = current + n;
+  state.data.streak = computeStreak(state.data.history, state.data.goal);
+  render();
+  await persist();
   refreshLeaderboard();
+}
+
+async function setResultForToday(value) {
+  const today = todayStr();
+  state.data.history[today] = value;
+  state.data.streak = computeStreak(state.data.history, state.data.goal);
+  state.view = 'main';
+  render();
+  await persist();
+  refreshLeaderboard();
+}
+
+async function confirmGoal(newGoal) {
+  const wasOnboarding = state.view === 'onboarding';
+  state.data.goal = newGoal;
+  state.data.streak = computeStreak(state.data.history, state.data.goal);
+  state.view = 'main';
+  render();
+  await persist();
+  if (!wasOnboarding) refreshLeaderboard();
 }
 
 async function refreshLeaderboard() {
@@ -333,31 +451,135 @@ async function refreshLeaderboard() {
   renderLeaderboard();
 }
 
+/* ---------------- Render ---------------- */
+
 function render() {
   const app = document.getElementById('app');
 
   if (state.configError) {
     app.innerHTML = `
-            <div class="error-banner">
-              Трекер не настроен: впиши SUPABASE_URL и SUPABASE_ANON_KEY в начале файла, иначе данные никуда не сохранятся.
-            </div>
-            `;
+      <div class="error-banner">
+        Трекер не настроен: впиши SUPABASE_URL и SUPABASE_ANON_KEY в начале файла, иначе данные никуда не сохранятся.
+      </div>
+    `;
     return;
   }
 
-  const today = todayStr();
-  const todayCount = state.data.history[today] || 0;
-  const fullSegs = Math.min(Math.floor(todayCount / SET_SIZE), 10);
-  const overGoal = todayCount > GOAL;
+  if (state.view === 'onboarding') {
+    renderOnboarding();
+    return;
+  }
 
+  renderMain();
+
+  if (state.view === 'settings-goal') {
+    renderGoalModal('settings');
+  }
+}
+
+function renderGoalPickerBody(mode, currentGoal) {
+  const selected = state.pendingGoalSelection ?? currentGoal;
+  const presetsHtml = GOAL_PRESETS.map(p => `
+    <button data-preset="${p}" class="${p === selected ? 'selected' : ''}">${p}</button>
+  `).join('');
+
+  return `
+    <div class="preset-row">${presetsHtml}</div>
+    <div class="custom-row">
+      <input id="goal-custom-input" type="number" min="1" placeholder="своё число" />
+      <button id="goal-custom-set">Ок</button>
+    </div>
+    <div class="edit-actions" style="margin-top:18px">
+      <button class="primary" id="goal-confirm">${mode === 'onboarding' ? 'Начать' : 'Сохранить'}</button>
+      ${mode === 'settings' ? '<button class="link-btn" id="goal-cancel">Отмена</button>' : ''}
+    </div>
+  `;
+}
+
+function renderOnboarding() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="panel onboarding">
+      <h2>Сколько отжиманий ты хочешь делать каждый день?</h2>
+      <p class="sub">Выбери комфортное количество. Его можно изменить позже.</p>
+      ${renderGoalPickerBody('onboarding', DEFAULT_GOAL)}
+    </div>
+  `;
+  bindGoalPickerEvents('onboarding');
+}
+
+function renderGoalModal(mode) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'goal-modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal">
+      <h2>Выбери новую дневную норму</h2>
+      ${renderGoalPickerBody(mode, state.data.goal)}
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  bindGoalPickerEvents(mode);
+  const cancelBtn = document.getElementById('goal-cancel');
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      state.pendingGoalSelection = null;
+      state.view = 'main';
+      closeGoalModal();
+    };
+  }
+}
+
+function closeGoalModal() {
+  const el = document.getElementById('goal-modal-backdrop');
+  if (el) el.remove();
+}
+
+function bindGoalPickerEvents(mode) {
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.onclick = () => {
+      state.pendingGoalSelection = parseInt(btn.dataset.preset, 10);
+      document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+  });
+  const customSet = document.getElementById('goal-custom-set');
+  if (customSet) {
+    customSet.onclick = () => {
+      const input = document.getElementById('goal-custom-input');
+      const val = parseInt(input.value, 10);
+      if (Number.isInteger(val) && val > 0) {
+        state.pendingGoalSelection = val;
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('selected'));
+      }
+    };
+  }
+  const confirmBtn = document.getElementById('goal-confirm');
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      const chosen = state.pendingGoalSelection ?? state.data.goal ?? DEFAULT_GOAL;
+      state.pendingGoalSelection = null;
+      if (mode === 'settings') closeGoalModal();
+      confirmGoal(chosen);
+    };
+  }
+}
+
+function renderMain() {
+  const app = document.getElementById('app');
+  const today = todayStr();
+  const goal = state.data.goal;
+  const todayCount = state.data.history[today] || 0;
+  const remaining = Math.max(goal - todayCount, 0);
+  const over = Math.max(todayCount - goal, 0);
+  const done = todayCount >= goal;
+
+  const segCount = goal > 0 ? Math.min(Math.floor((todayCount / goal) * SEGMENTS), SEGMENTS) : 0;
   let tallyHtml = '';
-  for (let i = 0; i
-            < 10; i++) {
+  for (let i = 0; i < SEGMENTS; i++) {
     let cls = 'seg';
-    if (i < fullSegs) cls += overGoal ? ' over' : ' full';
-    tallyHtml += `<div class="${cls}">
-            </div>
-            `;
+    if (i < segCount) cls += done ? ' over' : ' full';
+    tallyHtml += `<div class="${cls}"></div>`;
   }
 
   let calHtml = '';
@@ -365,185 +587,165 @@ function render() {
     const d = dateStr(-i);
     const c = state.data.history[d] || 0;
     let cls = 'day';
-    if (c >= GOAL) cls += ' done';
+    if (c >= goal) cls += ' done';
     else if (c > 0) cls += ' some';
-    calHtml += `
-            <div class="${cls}" title="${d}: ${c}">
-            </div>
-            `;
+    const status = c >= goal ? 'норма выполнена' : (c > 0 ? 'норма не выполнена' : 'ничего не отмечено');
+    calHtml += `<div class="${cls}" title="${formatDateHuman(d)}: ${c} (норма ${goal}) — ${status}"></div>`;
   }
 
-  app.innerHTML = `
-            <header>
-              <h1>
-                100 отжиманий
-              </h1>
-              <div class="who">
-                Это
-                <span class="name">
-                  ${escapeHtml(state.identity.name)}
-                </span>
-              </div>
-            </header>
-            ${state.loadError ? `
-<div class="error-banner">
-  Не удалось загрузить твои данные, но можно продолжать — новые повторения сохранятся.
-</div>
-` : ''}
-            <div class="panel hero">
-              <div class="count">
-                ${todayCount}
-                <span class="goal">
-                  / ${GOAL}
-                </span>
-              </div>
-              <div class="label">
-                ${todayCount >= GOAL ? 'Цель на сегодня выполнена' : `осталось ${GOAL - todayCount}`}
-              </div>
-              <div class="tally">
-                ${tallyHtml}
-              </div>
-              <div class="tally-caption">
-                <span>
-                  0
-                </span>
-                <span>
-                  по 10 отжиманий
-                </span>
-                <span>
-                  100
-                </span>
-              </div>
-              <div class="add-row">
-                <button data-add="10">
-                  +10
-                </button>
-                <button data-add="20">
-                  +20
-                </button>
-                <button data-add="25">
-                  +25
-                </button>
-                <button class="primary" data-add="100">
-                  Сразу 100
-                </button>
-              </div>
-              <div class="custom-row">
-                <input id="custom-input" type="number" min="1" placeholder="своё число" />
-                <button id="custom-add">
-                  Добавить
-                </button>
-              </div>
-            </div>
-            <div class="panel strip">
-              <div>
-                <div class="streak-num">
-                  ${state.data.streak}
-                </div>
-                <div class="streak-text">
-                  ${state.data.streak === 1 ? 'день подряд' : 'дней подряд'}
-                </div>
-              </div>
-              <div style="flex:1">
-                <div class="calendar">
-                  ${calHtml}
-                </div>
-              </div>
-            </div>
-            <div class="panel" id="leaderboard-panel">
-              <h2>
-                Рейтинг сегодня
-              </h2>
-              <p class="sub">
-                Общий для всех, кто пользуется трекером
-              </p>
-              <div id="leaderboard-body">
-                <div class="empty">
-                  Загрузка рейтинга…
-                </div>
-              </div>
-            </div>
-            `;
+  const addRowButtons = `
+    <button data-add="5">+5</button>
+    <button data-add="10">+10</button>
+    <button data-add="20">+20</button>
+    ${remaining > 0 ? `<button class="primary" data-add="${remaining}">Выполнить норму</button>` : ''}
+  `;
 
-  document.querySelectorAll('[data-add]').forEach(btn => {
-    btn.onclick = () => addReps(parseInt(btn.dataset.add, 10));
-  });
-  document.getElementById('custom-add').onclick = () => {
-    const input = document.getElementById('custom-input');
-    const val = parseInt(input.value, 10);
-    if (val > 0) { addReps(val); input.value = ''; }
+  app.innerHTML = `
+    <header>
+      <h1>Моя норма</h1>
+      <div class="who">Это <span class="name">${escapeHtml(state.identity.name)}</span></div>
+    </header>
+
+    ${state.loadError ? '<div class="error-banner">Не удалось загрузить твои данные, но можно продолжать — новые повторения сохранятся.</div>' : ''}
+
+    <div class="panel hero">
+      <div class="count">${todayCount}<span class="goal"> / ${goal}</span></div>
+      <div class="label ${done ? 'done' : ''}">${done ? 'Норма выполнена ✓' : `осталось ${remaining}`}</div>
+      ${over > 0 ? `<div class="overflow">+${over} сверх нормы</div>` : ''}
+
+      <div class="tally">${tallyHtml}</div>
+      <div class="tally-caption"><span>0</span><span>норма: ${goal}</span><span>${goal}</span></div>
+
+      ${state.view === 'edit-result' ? renderEditPanel(todayCount) : `
+        <div class="add-row">${addRowButtons}</div>
+        <div class="custom-row">
+          <input id="custom-input" type="number" min="1" placeholder="своё число" />
+          <button id="custom-add">Добавить</button>
+        </div>
+        <div style="margin-top:10px; text-align:center">
+          <button class="link-btn" id="edit-result-btn">Изменить результат</button>
+        </div>
+      `}
+    </div>
+
+    <div class="panel strip">
+      <div>
+        <div class="streak-num">🔥 ${state.data.streak}</div>
+        <div class="streak-text">${state.data.streak === 1 ? 'день подряд' : 'дней подряд'}</div>
+      </div>
+      <div style="flex:1"><div class="calendar">${calHtml}</div></div>
+    </div>
+
+    <div class="panel" id="leaderboard-panel">
+      <h2>Рейтинг сегодня</h2>
+      <p class="sub">Общий для всех, кто пользуется трекером</p>
+      <div id="leaderboard-body"><div class="empty">Загрузка рейтинга…</div></div>
+    </div>
+
+    <div class="panel settings-row">
+      <div>
+        <div class="sub" style="margin-bottom:2px">Твоя дневная норма</div>
+        <div class="goal-value">${goal} отжиманий</div>
+      </div>
+      <button id="open-settings-goal">Изменить</button>
+    </div>
+  `;
+
+  if (state.view === 'edit-result') {
+    bindEditPanelEvents();
+  } else {
+    document.querySelectorAll('[data-add]').forEach(btn => {
+      btn.onclick = () => addReps(parseInt(btn.dataset.add, 10));
+    });
+    document.getElementById('custom-add').onclick = () => {
+      const input = document.getElementById('custom-input');
+      const val = parseInt(input.value, 10);
+      if (Number.isInteger(val) && val > 0) { addReps(val); input.value = ''; }
+    };
+    document.getElementById('custom-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('custom-add').click();
+    });
+    document.getElementById('edit-result-btn').onclick = () => {
+      state.view = 'edit-result';
+      render();
+    };
+  }
+
+  document.getElementById('open-settings-goal').onclick = () => {
+    state.pendingGoalSelection = null;
+    state.view = 'settings-goal';
+    render();
   };
-  document.getElementById('custom-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('custom-add').click();
-  });
 
   renderLeaderboard();
+}
+
+function renderEditPanel(currentValue) {
+  return `
+    <div class="edit-row">
+      <input id="edit-result-input" type="number" min="0" value="${currentValue}" />
+    </div>
+    <div id="edit-error" class="field-error" style="display:none">Введи целое число не меньше 0.</div>
+    <div class="edit-actions">
+      <button class="primary" id="edit-save">Сохранить</button>
+      <button class="link-btn" id="edit-cancel">Отмена</button>
+    </div>
+  `;
+}
+
+function bindEditPanelEvents() {
+  const saveBtn = document.getElementById('edit-save');
+  const cancelBtn = document.getElementById('edit-cancel');
+  if (!saveBtn) return;
+  saveBtn.onclick = () => {
+    const input = document.getElementById('edit-result-input');
+    const raw = String(input.value).trim();
+    const val = parseInt(raw, 10);
+    const errEl = document.getElementById('edit-error');
+    if (raw === '' || !Number.isInteger(val) || val < 0) {
+      errEl.style.display = 'block';
+      return;
+    }
+    setResultForToday(val);
+  };
+  cancelBtn.onclick = () => {
+    state.view = 'main';
+    render();
+  };
+  document.getElementById('edit-result-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveBtn.click();
+  });
 }
 
 function renderLeaderboard() {
   const el = document.getElementById('leaderboard-body');
   if (!el) return;
   if (state.leaderboard === null) {
-   if (state.leaderboard === null) {
-  el.innerHTML = `
-    <div class="empty">
-      Не удалось загрузить рейтинг.
-    </div>
-  `;
-  return;
-}
-
-if (!state.leaderboard.length) {
-  el.innerHTML = `
-    <div class="empty">
-      Пока никто не отметился сегодня.
-    </div>
-  `;
-  return;
-}
+    el.innerHTML = '<div class="empty">Не удалось загрузить рейтинг.</div>';
+    return;
+  }
+  if (!state.leaderboard.length) {
+    el.innerHTML = '<div class="empty">Пока никто не отметился сегодня.</div>';
+    return;
   }
   let rows = '';
   state.leaderboard.forEach((entry, i) => {
-    const mine = entry.name === state.identity.name;
+    const mine = entry.id === state.identity.id;
     rows += `
-            <tr class="${mine ? 'me' : ''}">
-              <td class="rank">
-                ${i + 1}
-              </td>
-              <td>
-                ${escapeHtml(entry.name)}
-              </td>
-              <td class="today-count">
-                ${entry.todayCount}
-              </td>
-              <td class="streak-cell">
-                ${entry.streak > 0 ? entry.streak + ' дн' : '—'}
-              </td>
-            </tr>
-            `;
+      <tr class="${mine ? 'me' : ''}">
+        <td class="rank">${i + 1}</td>
+        <td>${escapeHtml(entry.name)}</td>
+        <td class="today-count">${entry.todayCount}<div class="pct">${entry.pct}%</div></td>
+        <td class="streak-cell">${entry.streak > 0 ? '🔥 ' + entry.streak : '—'}</td>
+      </tr>
+    `;
   });
   el.innerHTML = `
-            <table class="board">
-              <thead>
-                <tr>
-                  <th>
-                  </th>
-                  <th>
-                    Имя
-                  </th>
-                  <th style="text-align:right">
-                    Сегодня
-                  </th>
-                  <th style="text-align:right">
-                    Стрик
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-            </table>
-            `;
+    <table class="board">
+      <thead><tr><th></th><th>Имя</th><th style="text-align:right">Сегодня</th><th style="text-align:right">Серия</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
 }
 
 function escapeHtml(str) {
@@ -553,6 +755,7 @@ function escapeHtml(str) {
 }
 
 init();
-          </script>
-        </body>
-      </html>
+</script>
+
+</body>
+</html>

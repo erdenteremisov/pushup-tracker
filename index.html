@@ -156,6 +156,23 @@
 
   button.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
 
+  .kruzhok-btn {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px 16px;
+    background: #229ed9;
+    border: 1px solid #229ed9;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .kruzhok-btn:hover { background: #1c8bc2; border-color: #1c8bc2; }
+
   button.link-btn {
     background: none;
     border: none;
@@ -298,6 +315,8 @@ const LEADERBOARD_WINDOW_DAYS = 7;
 const STREAK_BONUS_PER_DAY = 5;
 const STREAK_BONUS_CAP = 50;
 const MONTHS_SHORT = ['ЯНВ','ФЕВ','МАР','АПР','МАЙ','ИЮН','ИЮЛ','АВГ','СЕН','ОКТ','НОЯ','ДЕК'];
+const BOT_LINK = "https://t.me/seooptim_bot";
+const KRUZHOK_THRESHOLD = 10;
 
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); }
@@ -308,11 +327,17 @@ const supabaseClient = supabaseConfigured
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+/* Локальная (а не UTC) дата — иначе вечерняя запись могла бы уезжать
+   в соседний календарный день у пользователей восточнее/западнее UTC. */
+function pad2(n) { return String(n).padStart(2, '0'); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
 function dateStr(offsetDays) {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 function formatDateHuman(dstr) {
   const d = new Date(dstr + 'T00:00:00');
@@ -488,7 +513,9 @@ async function fetchLeaderboard() {
       todayCount,
       pct,
       points: weeklyPoints(history, goal),
-      streak: row.streak || 0,
+      // Текущая серия считается заново из истории, а не берётся из
+      // сохранённого поля — иначе у неактивных игроков она "застревала".
+      streak: computeStreak(history, goal),
     };
   });
   entries.sort((a, b) => b.points - a.points || b.streak - a.streak);
@@ -530,6 +557,11 @@ async function init() {
   } else {
     state.view = 'main';
   }
+
+  // Серия всегда пересчитывается заново при открытии — если пользователь
+  // не заходил несколько дней, старое сохранённое значение не должно
+  // "висеть" устаревшим до следующего действия.
+  state.data.streak = computeStreak(state.data.history, state.data.goal);
 
   render();
   if (state.view === 'main') refreshLeaderboard();
@@ -701,11 +733,25 @@ function bindGoalPickerEvents(mode) {
   const confirmBtn = document.getElementById('goal-confirm');
   if (confirmBtn) {
     confirmBtn.onclick = () => {
-      const chosen = state.pendingGoalSelection ?? state.data.goal ?? DEFAULT_GOAL;
+      // Если в поле "своё число" уже что-то введено, оно побеждает,
+      // даже если пользователь не успел нажать отдельную кнопку "Ок" —
+      // иначе набранное значение молча терялось при нажатии "Сохранить".
+      let chosen = state.pendingGoalSelection ?? state.data.goal ?? DEFAULT_GOAL;
+      const liveInput = document.getElementById('goal-custom-input');
+      if (liveInput && liveInput.value.trim() !== '') {
+        const liveVal = parseInt(liveInput.value, 10);
+        if (Number.isInteger(liveVal) && liveVal > 0) chosen = liveVal;
+      }
       state.pendingGoalSelection = null;
       if (mode === 'settings') closeGoalModal();
       confirmGoal(chosen);
     };
+  }
+  const customInputEl = document.getElementById('goal-custom-input');
+  if (customInputEl) {
+    customInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && confirmBtn) confirmBtn.click();
+    });
   }
 }
 
@@ -751,7 +797,7 @@ function renderMain() {
     <header>
       <div class="brand">
         <img src="${BRAND_LOGO}" class="brand-mark">
-        <h1>Моя норма</h1>
+        <h1>ПРОСТО ДЕЛАЙ</h1>
       </div>
       <div class="who">Это <span class="name">${escapeHtml(state.identity.name)}</span></div>
     </header>
@@ -765,6 +811,8 @@ function renderMain() {
 
       <div class="tally">${tallyHtml}</div>
       <div class="tally-caption"><span>0</span><span>норма: ${goal}</span><span>${goal}</span></div>
+
+      ${remaining <= KRUZHOK_THRESHOLD ? `<button class="kruzhok-btn" id="kruzhok-btn">🎥 Отметить выполнение</button>` : ''}
 
       ${state.view === 'edit-result' ? renderEditPanel(todayCount) : `
         <div class="add-row">${addRowButtons}</div>
@@ -836,6 +884,17 @@ function renderMain() {
     render();
   };
 
+  const kruzhokBtn = document.getElementById('kruzhok-btn');
+  if (kruzhokBtn) {
+    kruzhokBtn.onclick = () => {
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(BOT_LINK);
+      } else {
+        window.open(BOT_LINK, '_blank');
+      }
+    };
+  }
+
   renderLeaderboard();
 }
 
@@ -881,11 +940,34 @@ function renderStats() {
   const { total, record } = totalAndRecord(state.data.history);
   const { done, total: totalDays } = daysDoneSinceJoin(state.data.history, state.data.joinedAt, state.data.goal);
 
-  const dates = Object.keys(state.data.history).sort().reverse();
+  // Список строится по календарным датам от дня вступления до сегодня —
+  // а не по ключам history — иначе дни без записи просто "выпадали" бы
+  // из статистики вместо того, чтобы показаться как пропуск.
+  const startStr = state.data.joinedAt || todayStr();
+  const start = new Date(startStr + 'T00:00:00');
+  const today = new Date(todayStr() + 'T00:00:00');
+  const allDates = [];
+  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+    allDates.push(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`);
+  }
+  allDates.reverse();
+
   let rows = '';
-  dates.forEach(d => {
+  allDates.forEach(d => {
     const entry = getEntry(state.data.history, d, state.data.goal);
-    if (!entry) return;
+    if (!entry) {
+      rows += `
+        <div class="hist-row">
+          <div class="hist-date">${formatDateShort(d)}</div>
+          <div class="hist-mid">
+            <div class="hist-line"><span class="hist-lbl">Цель</span> ${state.data.goal}</div>
+            <div class="hist-line"><span class="hist-lbl">Факт</span> 0</div>
+          </div>
+          <div class="hist-status no">✕ Пропуск</div>
+        </div>
+      `;
+      return;
+    }
     const met = entry.count >= entry.goal;
     rows += `
       <div class="hist-row">

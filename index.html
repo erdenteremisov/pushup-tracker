@@ -558,10 +558,26 @@ async function init() {
     state.view = 'main';
   }
 
+  // Одноразовая миграция: дни, сохранённые ещё до того, как цель стала
+  // привязываться к конкретному дню, хранятся просто числом (без goal).
+  // Без этого шага такой день каждый раз "одалживал" ТЕКУЩУЮ цель для
+  // отображения — и при каждой смене цели его прошлый показатель на
+  // экране сам собой менялся, хотя факт был настоящим, уже выполненным
+  // результатом. Фиксируем цель для таких дней один раз и сохраняем.
+  let needsMigration = false;
+  Object.keys(state.data.history).forEach(d => {
+    if (typeof state.data.history[d] === 'number') {
+      state.data.history[d] = { count: state.data.history[d], goal: state.data.goal };
+      needsMigration = true;
+    }
+  });
+
   // Серия всегда пересчитывается заново при открытии — если пользователь
   // не заходил несколько дней, старое сохранённое значение не должно
   // "висеть" устаревшим до следующего действия.
   state.data.streak = computeStreak(state.data.history, state.data.goal);
+
+  if (needsMigration) persist();
 
   render();
   if (state.view === 'main') refreshLeaderboard();
@@ -778,12 +794,13 @@ function renderMain() {
     const d = dateStr(-i);
     const entry = getEntry(state.data.history, d, goal);
     const c = entry ? entry.count : 0;
-    const dGoal = entry ? entry.goal : goal;
+    const dGoal = entry ? entry.goal : null;
     let cls = 'day';
-    if (c >= dGoal) cls += ' done';
+    if (entry && c >= dGoal) cls += ' done';
     else if (c > 0) cls += ' some';
-    const status = c >= dGoal ? 'норма выполнена' : (c > 0 ? 'норма не выполнена' : 'ничего не отмечено');
-    calHtml += `<div class="${cls}" title="${formatDateHuman(d)}: ${c} (норма ${dGoal}) — ${status}"></div>`;
+    const status = entry ? (c >= dGoal ? 'норма выполнена' : 'норма не выполнена') : 'ничего не отмечено';
+    const goalLabel = dGoal === null ? '—' : dGoal;
+    calHtml += `<div class="${cls}" title="${formatDateHuman(d)}: ${c} (норма ${goalLabel}) — ${status}"></div>`;
   }
 
   const addRowButtons = `
@@ -812,7 +829,7 @@ function renderMain() {
       <div class="tally">${tallyHtml}</div>
       <div class="tally-caption"><span>0</span><span>норма: ${goal}</span><span>${goal}</span></div>
 
-      ${remaining <= KRUZHOK_THRESHOLD ? `<button class="kruzhok-btn" id="kruzhok-btn">🎥 Отметить выполнение</button>` : ''}
+      ${remaining <= KRUZHOK_THRESHOLD ? `<button class="kruzhok-btn" id="kruzhok-btn">🎥 Поделиться кружком</button>` : ''}
 
       ${state.view === 'edit-result' ? renderEditPanel(todayCount) : `
         <div class="add-row">${addRowButtons}</div>
@@ -887,10 +904,14 @@ function renderMain() {
   const kruzhokBtn = document.getElementById('kruzhok-btn');
   if (kruzhokBtn) {
     kruzhokBtn.onclick = () => {
+      // RESULT = цель, если факт ещё не дотянул до неё, иначе — сам факт.
+      // Цель в ссылку не передаём, боту нужен только итоговый результат.
+      const result = todayCount < goal ? goal : todayCount;
+      const shareLink = `${BOT_LINK}?start=share_${result}`;
       if (tg && tg.openTelegramLink) {
-        tg.openTelegramLink(BOT_LINK);
+        tg.openTelegramLink(shareLink);
       } else {
-        window.open(BOT_LINK, '_blank');
+        window.open(shareLink, '_blank');
       }
     };
   }
@@ -960,7 +981,7 @@ function renderStats() {
         <div class="hist-row">
           <div class="hist-date">${formatDateShort(d)}</div>
           <div class="hist-mid">
-            <div class="hist-line"><span class="hist-lbl">Цель</span> ${state.data.goal}</div>
+            <div class="hist-line"><span class="hist-lbl">Цель</span> —</div>
             <div class="hist-line"><span class="hist-lbl">Факт</span> 0</div>
           </div>
           <div class="hist-status no">✕ Пропуск</div>
